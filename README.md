@@ -3,6 +3,11 @@
 - Add stack trace for errors
 - Do we want to Give context to errors like this: `h.Must(error, string, ...interface{})`
   I'm not sure we need this if we have stack trace.
+- Add package level functions
+  ```go
+  errors.Must(err)
+  errors.Expect(expr)
+  ```
 
 ### Examples
 
@@ -23,7 +28,7 @@ func (l *Logger) Log(v interface{}) (err error) {
 	_, err = f.Write(buf)
 	l.Must(err)
 	return
-
+}
 ```
 
 
@@ -38,10 +43,10 @@ func NewParser() *Parser {
     p := new(Parser)
     p.Trace = true
     // make Expect throwing ParseError.
-	p.AssertFunc = func(msg string) error {
-		return &ParseError{msg}
-	}
-	return p
+    p.AssertFunc = func(msg string) error {
+    	return &ParseError{msg}
+    }
+    return p
 }
 
 func (p *Parser) Parse(b []byte) (params Params, err error) {
@@ -76,7 +81,7 @@ func (p *Parser) parseDate(params *Params) {
 
 // Let see how the function above looks like without the error handling.
 func (p *Parser) parseDate_(params *Params) error {
-	// parse "created_at" field.
+    // parse "created_at" field.
     v, ok := params.Filter["created_at"]
     if !ok {
         return errors.New("created_at is a required field")
@@ -89,8 +94,8 @@ func (p *Parser) parseDate_(params *Params) error {
     if err != nil {
         return err
     }
-	params.CreatedAt = created
-	// parse "updated_at" field.
+    params.CreatedAt = created
+    // parse "updated_at" field.
     v, ok = params.Filter["updated_at"]
     if !ok {
        return errors.New("created_at is a required field")
