@@ -112,3 +112,7 @@ func (p *Parser) parseDate_(params *Params) error {
     return nil
 }
 ```
+
+### Why
+- Makes life eaiser when every step is an expectation or when you have deeply nested calls. Writing parsers for example.
+- Common in the standard library (gob, json, template, ...) - Why not making something generic?
