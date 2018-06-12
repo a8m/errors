@@ -10,7 +10,6 @@
 ```go
 type Logger struct {
 	errors.Handler
-	// ...
 	FileName string
 }
 
@@ -23,7 +22,6 @@ func (l *Logger) Log(v interface{}) (err error) {
 	defer l.Must(f.Close())
 	_, err = f.Write(buf)
 	l.Must(err)
-	// ...
 	return
 
 ```
@@ -46,10 +44,10 @@ func NewParser() *Parser {
 	return p
 }
 
-func (p *Parser) Parse(b []byte) (params *Params, err error) {
+func (p *Parser) Parse(b []byte) (params Params, err error) {
 	// catch only specific errors.
 	defer p.Catch(&err, &json.InvalidUnmarshalError{}, &ParseError{})
-	p.Must(json.Unmarshal(b, params))
+	p.Must(json.Unmarshal(b, &params))
 	p.Expect(params.Limit > 0, "Limit must be greater than 0")
 	p.Expect(params.Offset >= 0, "Offset must be greater than or equal to 0")
 	// call private methods.

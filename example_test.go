@@ -2,7 +2,6 @@ package errors_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -19,6 +18,7 @@ type Parser struct {
 
 func NewParser() *Parser {
 	p := new(Parser)
+
 	// <init code>
 
 	// custom assert error.
@@ -28,14 +28,14 @@ func NewParser() *Parser {
 	return p
 }
 
-func (p *Parser) Parse(b []byte) (params *Params, err error) {
+func (p *Parser) Parse(b []byte) (params Params, err error) {
 	// catch only specific errors.
 	defer p.Catch(&err, &json.InvalidUnmarshalError{}, &ParseError{})
-	p.Must(json.Unmarshal(b, params))
+	p.Must(json.Unmarshal(b, &params))
 	p.Expect(params.Limit > 0, "Limit must be greater than 0")
 	p.Expect(params.Offset >= 0, "Offset must be greater than or equal to 0")
 	// call private methods.
-	p.parseDate(params)
+	p.parseDate(&params)
 	return
 }
 
@@ -59,18 +59,18 @@ func (p *Parser) parseDate(params *Params) {
 }
 
 type Params struct {
-	Limit     int
-	Offset    int
-	Filter    map[string]interface{}
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Limit     int                    `json:"limit,omitempty"`
+	Offset    int                    `json:"offset,omitempty"`
+	Filter    map[string]interface{} `json:"filter,omitempty"`
+	CreatedAt time.Time              `json:"created_at,omitempty"`
+	UpdatedAt time.Time              `json:"updated_at,omitempty"`
 }
 
 type ParseError struct {
 	msg string
 }
 
-func (p ParseError) Error() string { return "" }
+func (e ParseError) Error() string { return e.msg }
 
 // --------------------------------------------------------
 // Example 2
@@ -78,12 +78,11 @@ func (p ParseError) Error() string { return "" }
 // Fancy logger
 type Logger struct {
 	errors.Handler
-	// ...
 	FileName string
 }
 
 func (l *Logger) Log(v interface{}) (err error) {
-	l.Catch(&err)
+	defer l.Catch(&err)
 	buf, err := json.Marshal(v)
 	l.Must(err)
 	f, err := os.OpenFile(l.FileName, os.O_APPEND|os.O_WRONLY, 0644)
@@ -91,11 +90,25 @@ func (l *Logger) Log(v interface{}) (err error) {
 	defer l.Must(f.Close())
 	_, err = f.Write(buf)
 	l.Must(err)
-	// ...
 	return
 }
 
 func TestLogger(t *testing.T) {
 	l := new(Logger)
-	fmt.Println(l.Log(nil))
+	err := l.Log(nil)
+	if err == nil {
+		t.Fatal("expect error to not be nil")
+	}
+}
+
+func TestParser(t *testing.T) {
+	p := NewParser()
+	_, err := p.Parse([]byte(`{ "limit": -1 }`))
+	if err == nil {
+		t.Fatal("expect error to not be nil")
+	}
+	_, ok := err.(*ParseError)
+	if !ok {
+		t.Fatalf("expect error to be ParseError, but got: %v", err)
+	}
 }
