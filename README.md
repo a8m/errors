@@ -12,6 +12,7 @@
 ### Examples
 
 #### Simple
+
 ```go
 type Logger struct {
 	errors.Handler
@@ -19,6 +20,7 @@ type Logger struct {
 }
 
 func (l *Logger) Log(v interface{}) (err error) {
+	// catch all errors except runtime.Error
 	defer l.Catch(&err)
 	buf, err := json.Marshal(v)
 	l.Must(err)
@@ -49,18 +51,12 @@ func NewParser() *Parser {
     return p
 }
 
-func (p *Parser) Parse(b []byte) (params Params, err error) {
-	// catch only specific errors.
+func (p *Parser) Parse(b []byte) (params *Params, err error) {
+	// catch only these errors.
 	defer p.Catch(&err, &json.InvalidUnmarshalError{}, &ParseError{})
 	p.Must(json.Unmarshal(b, &params))
 	p.Expect(params.Limit > 0, "Limit must be greater than 0")
 	p.Expect(params.Offset >= 0, "Offset must be greater than or equal to 0")
-	// call private methods.
-	p.parseDate(params)
-	return
-}
-
-func (p *Parser) parseDate(params *Params) {
 	// parse "created_at" field.
 	v, ok := params.Filter["created_at"]
 	p.Expect(ok, "created_at is a required field")
@@ -77,10 +73,20 @@ func (p *Parser) parseDate(params *Params) {
 	updated, err := time.Parse(time.RFC3339, vs)
 	p.Must(err)
 	params.UpdatedAt = updated
+	return
 }
 
 // Let see how the function above looks like without the error handling.
-func (p *Parser) parseDate_(params *Params) error {
+func (p *Parser) Parse(b []byte) (params *Params, err error) {
+    if err = json.Unmarshal(b, &params); err != nil {
+    	return nil, err
+    }
+    if params.Limit > 0 {
+    	return nil, errors.New("Limit must be greater than 0")
+    }
+    if params.Offset >= 0 {
+    	return nil, errors.New("Offset must be greater than or equal to 0")
+    }
     // parse "created_at" field.
     v, ok := params.Filter["created_at"]
     if !ok {
