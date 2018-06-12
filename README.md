@@ -114,5 +114,7 @@ func (p *Parser) parseDate_(params *Params) error {
 ```
 
 ### Why
-- Makes life eaiser when every step is an expectation or when you have deeply nested calls. Writing parsers for example.
-- Common in the standard library (gob, json, template, ...) - Why not making something generic?
+- Makes life eaiser when every step is an expectation or when you have deeply nested function calls.
+  Writing parsers for example.
+- Common in the standard library (gob, json, template, ...), and I have a few projects that use this technique.
+  __Why not creating something generic__?
