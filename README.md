@@ -115,7 +115,7 @@ func (p *Parser) Parse(b []byte) (params *Params, err error) {
         return err
     }
     params.UpdatedAt = updated
-    return nil
+    return params, nil
 }
 ```
 
