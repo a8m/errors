@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/a8m/errors"
+	"github.com/a8m/x/errors"
 )
 
 // --------------------------------------------------------
@@ -22,19 +22,17 @@ func NewParser() *Parser {
 	// <init code>
 
 	// custom assert error.
-	p.AssertFunc = func(msg string) error {
+	p.AssertError = func(msg string) error {
 		return &ParseError{msg}
 	}
 	return p
 }
 
 func (p *Parser) Parse(b []byte) (params Params, err error) {
-	// catch only specific errors.
-	defer p.Catch(&err, &json.InvalidUnmarshalError{}, &ParseError{})
+	defer p.Catch(&err)
 	p.Must(json.Unmarshal(b, &params))
-	p.Expect(params.Limit > 0, "Limit must be greater than 0")
-	p.Expect(params.Offset >= 0, "Offset must be greater than or equal to 0")
-	// call private methods.
+	p.Assert(params.Limit > 0, "Limit must be greater than 0")
+	p.Assert(params.Offset >= 0, "Offset must be greater than or equal to 0")
 	p.parseDate(&params)
 	return
 }
@@ -42,17 +40,17 @@ func (p *Parser) Parse(b []byte) (params Params, err error) {
 func (p *Parser) parseDate(params *Params) {
 	// parse "created_at" field.
 	v, ok := params.Filter["created_at"]
-	p.Expect(ok, "created_at is a required field")
+	p.Assert(ok, "created_at is a required field")
 	vs, ok := v.(string)
-	p.Expect(ok, "created_at must be type string")
+	p.Assert(ok, "created_at must be type string")
 	created, err := time.Parse(time.RFC3339, vs)
 	p.Must(err)
 	params.CreatedAt = created
 	// parse "updated_at" field.
 	v, ok = params.Filter["updated_at"]
-	p.Expect(ok, "created_at is a required field")
+	p.Assert(ok, "created_at is a required field")
 	vs, ok = v.(string)
-	p.Expect(ok, "updated_at must be type string")
+	p.Assert(ok, "updated_at must be type string")
 	updated, err := time.Parse(time.RFC3339, vs)
 	p.Must(err)
 	params.UpdatedAt = updated
@@ -82,7 +80,8 @@ type Logger struct {
 }
 
 func (l *Logger) Log(v interface{}) (err error) {
-	defer l.Catch(&err)
+	// catch only specific errors.
+	defer l.Catch(&err, &json.InvalidUnmarshalError{}, &ParseError{})
 	buf, err := json.Marshal(v)
 	l.Must(err)
 	f, err := os.OpenFile(l.FileName, os.O_APPEND|os.O_WRONLY, 0644)
