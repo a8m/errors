@@ -115,13 +115,9 @@ func TestLogger(t *testing.T) {
 }
 
 func TestParser(t *testing.T) {
+	t.Parallel()
 	p := NewParser()
 	_, err := p.Parse([]byte(`{ "limit": -1 }`))
-	if err == nil {
-		t.Fatal("expect error to not be nil")
-	}
-	_, ok := err.(*ParseError)
-	if !ok {
-		t.Fatalf("expect error to be ParseError, but got: %v", err)
-	}
+	assert.NotNil(t, err)
+	assert.IsType(t, err, &ParseError{})
 }
