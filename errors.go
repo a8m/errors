@@ -39,7 +39,7 @@ func (h *Handler) Catch(err *error, types ...error) {
 	if !ok {
 		panic(rerr)
 	}
-	// default case, catch all except runtime errors.
+	// if no types were defined, catch all except runtime errors.
 	if len(types) == 0 {
 		// don't catch runtime errors.
 		if _, ok := rerr.(runtime.Error); ok {
@@ -50,10 +50,12 @@ func (h *Handler) Catch(err *error, types ...error) {
 	}
 	// postpone the usage of reflection to the end.
 	typ := indirect(reflect.TypeOf(rerr))
+	// if is an AssertError type, return it
 	if typ == assertType {
 		*err = rerr
 		return
 	}
+	// if the error is one of the defined types, return it
 	for _, t := range types {
 		if indirect(reflect.TypeOf(t)) == typ {
 			*err = rerr
