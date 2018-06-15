@@ -18,7 +18,6 @@ var assertType = reflect.TypeOf(AssertError{})
 // Handler is the type you embed in your struct in order to give it the "fancy" errors handling
 // flow control.
 type Handler struct {
-	Trace       bool
 	AssertError func(string) error
 }
 
