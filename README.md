@@ -12,9 +12,9 @@ func (p *Parser) Parse(b []byte) (params *Params, err error) {
 	defer p.Catch(&err)
 	p.Must(json.Unmarshal(b, &params))
 	v, ok := params.Filter["created_at"]
-	p.Assert(ok, "created_at is a required field")
+	p.Assertf(ok, "created_at is a required field")
 	vs, ok := v.(string)
-	p.Assert(ok, "created_at must be type string")
+	p.Assertf(ok, "created_at must be type string")
 	created, err := time.Parse(time.RFC3339, vs)
 	p.Must(err)
 	return
@@ -54,7 +54,7 @@ func (l *Logger) Log(v interface{}) (err error) {
 	defer l.Catch(&err, &json.InvalidUnmarshalError{}, &ParseError{})
 	buf, err := json.Marshal(v)
 	l.Must(err)
-	f, err := os.OpenFile(l.FileName, os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(l.FileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	l.Must(err)
 	defer l.Must(f.Close())
 	_, err = f.Write(buf)

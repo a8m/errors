@@ -18,23 +18,11 @@ type Parser struct {
 	errors.Handler
 }
 
-func NewParser() *Parser {
-	p := new(Parser)
-
-	// <init code>
-
-	// custom assert error.
-	p.AssertError = func(msg string) error {
-		return &ParseError{msg}
-	}
-	return p
-}
-
 func (p *Parser) Parse(b []byte) (params Params, err error) {
 	defer p.Catch(&err)
 	p.Must(json.Unmarshal(b, &params))
-	p.Assert(params.Limit > 0, "Limit must be greater than 0")
-	p.Assert(params.Offset >= 0, "Offset must be greater than or equal to 0")
+	p.Assert(params.Limit > 0, &ParseError{msg: "Limit must be greater than 0"})
+	p.Assert(params.Offset >= 0, &ParseError{msg: "Offset must be greater than or equal to 0"})
 	p.parseDate(&params)
 	return
 }
@@ -42,17 +30,17 @@ func (p *Parser) Parse(b []byte) (params Params, err error) {
 func (p *Parser) parseDate(params *Params) {
 	// parse "created_at" field.
 	v, ok := params.Filter["created_at"]
-	p.Assert(ok, "created_at is a required field")
+	p.Assert(ok, &ParseError{msg: "created_at is a required field"})
 	vs, ok := v.(string)
-	p.Assert(ok, "created_at must be type string")
+	p.Assert(ok, &ParseError{msg: "created_at must be type string"})
 	created, err := time.Parse(time.RFC3339, vs)
 	p.Must(err)
 	params.CreatedAt = created
 	// parse "updated_at" field.
 	v, ok = params.Filter["updated_at"]
-	p.Assert(ok, "created_at is a required field")
+	p.Assert(ok, &ParseError{msg: "created_at is a required field"})
 	vs, ok = v.(string)
-	p.Assert(ok, "updated_at must be type string")
+	p.Assert(ok, &ParseError{msg: "updated_at must be type string"})
 	updated, err := time.Parse(time.RFC3339, vs)
 	p.Must(err)
 	params.UpdatedAt = updated
@@ -71,6 +59,14 @@ type ParseError struct {
 }
 
 func (e ParseError) Error() string { return e.msg }
+
+func TestParser(t *testing.T) {
+	t.Parallel()
+	p := new(Parser)
+	_, err := p.Parse([]byte(`{ "limit": -1 }`))
+	assert.NotNil(t, err)
+	assert.IsType(t, err, &ParseError{})
+}
 
 // --------------------------------------------------------
 // Example 2
@@ -113,14 +109,6 @@ func TestLogger(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
-}
-
-func TestParser(t *testing.T) {
-	t.Parallel()
-	p := NewParser()
-	_, err := p.Parse([]byte(`{ "limit": -1 }`))
-	assert.NotNil(t, err)
-	assert.IsType(t, err, &ParseError{})
 }
 
 // runtimer is used to test catching of runtime errors
