@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/a8m/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 // --------------------------------------------------------
@@ -81,22 +82,35 @@ type Logger struct {
 
 func (l *Logger) Log(v interface{}) (err error) {
 	// catch only specific errors.
-	defer l.Catch(&err, &json.InvalidUnmarshalError{}, &ParseError{})
+	defer l.Catch(&err, &os.PathError{})
 	buf, err := json.Marshal(v)
 	l.Must(err)
-	f, err := os.OpenFile(l.FileName, os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(l.FileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	l.Must(err)
-	defer l.Must(f.Close())
+	defer func() { l.Must(f.Close()) }()
 	_, err = f.Write(buf)
 	l.Must(err)
 	return
 }
 
 func TestLogger(t *testing.T) {
-	l := new(Logger)
-	err := l.Log(nil)
-	if err == nil {
-		t.Fatal("expect error to not be nil")
+	t.Parallel()
+	const logFile = "/tmp/test.log"
+	defer os.Remove(logFile)
+	tests := []struct {
+		path    string
+		wantErr bool
+	}{
+		{path: "", wantErr: true},
+		{path: logFile, wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			l := &Logger{FileName: tt.path}
+			err := l.Log(nil)
+			assert.Equal(t, tt.wantErr, err != nil)
+		})
 	}
 }
 
