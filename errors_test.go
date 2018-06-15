@@ -3,6 +3,7 @@ package errors_test
 import (
 	"encoding/json"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -120,4 +121,22 @@ func TestParser(t *testing.T) {
 	_, err := p.Parse([]byte(`{ "limit": -1 }`))
 	assert.NotNil(t, err)
 	assert.IsType(t, err, &ParseError{})
+}
+
+// runtimer is used to test catching of runtime errors
+type runtimer struct {
+	errors.Handler
+}
+
+func (l *runtimer) CatchNothing() (err error) {
+	defer l.Catch(&err)
+	// must on a runtime error should panic
+	l.Must(&runtime.TypeAssertionError{})
+	return
+}
+
+func TestRuntimeError(t *testing.T) {
+	t.Parallel()
+	rt := new(runtimer)
+	assert.Panics(t, func() { rt.CatchNothing() })
 }

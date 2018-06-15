@@ -41,12 +41,12 @@ func (h *Handler) Catch(err *error, types ...error) {
 	if !ok {
 		panic(rerr)
 	}
-	// don't catch runtime errors.
-	if _, ok := rerr.(runtime.Error); ok {
-		panic(rerr)
-	}
 	// default case, catch all except runtime errors.
 	if len(types) == 0 {
+		// don't catch runtime errors.
+		if _, ok := rerr.(runtime.Error); ok {
+			panic(rerr)
+		}
 		*err = rerr
 		return
 	}
