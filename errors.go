@@ -17,9 +17,7 @@ var assertType = reflect.TypeOf(AssertError{})
 
 // Handler is the type you embed in your struct in order to give it the "fancy" errors handling
 // flow control.
-type Handler struct {
-	AssertError func(string) error
-}
+type Handler struct{}
 
 // Catch catches errors in the function it was called in it. The default
 // behavior is to catch all errors except runtime.Error, and it goes like this:
@@ -72,28 +70,38 @@ func (h *Handler) Must(err error) {
 	}
 }
 
-// Assert panics if the assertion is false. If you want the Handler to throw a custom error,
-// set the Handler.AssertError parameter. For example:
+// Assert panics with a custom error. For example:
 //
 //	type Parser struct {
 //		errors.Handler
 //	}
 //
 //	p := new(Parser)
-//	p.AssertError = func(s string) error {
-//		return &ParseError{s}
+//
+//	p.Assert(len(input) > 0, &ParseError{msg: "empty input"})
+//
+func (h *Handler) Assert(cond bool, err error) {
+	if cond {
+		return
+	}
+	panic(err)
+}
+
+// Assertf panics with AssertError. For example:
+//
+//	type Parser struct {
+//		errors.Handler
 //	}
+//
+//	p := new(Parser)
 //
 //	p.Assert(len(input) > 0, "empty input")
 //
-func (h *Handler) Assert(cond bool, format string, v ...interface{}) {
+func (h *Handler) Assertf(cond bool, format string, v ...interface{}) {
 	if cond {
 		return
 	}
 	msg := fmt.Sprintf(format, v...)
-	if h.AssertError != nil {
-		panic(h.AssertError(msg))
-	}
 	panic(AssertError{msg})
 }
 
