@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/a8m/x/errors"
+	"github.com/a8m/errors"
 )
 
 // --------------------------------------------------------
