@@ -29,11 +29,11 @@ type Handler struct {
 // Otherwise it catches only the defined error types.
 // Usage:
 //
-//      defer h.Catch(&err)
+//		defer h.Catch(&err)
 //
 // Or:
 //
-//	    defer h.Catch(&err, io.EOF, &time.ParseError{})
+//		defer h.Catch(&err, io.EOF, &time.ParseError{})
 //
 func (h *Handler) Catch(err *error, types ...error) {
 	r := recover()
@@ -113,7 +113,10 @@ func (h *Handler) Assertf(cond bool, format string, v ...interface{}) {
 	if cond {
 		return
 	}
-	msg := fmt.Sprintf(format, v...)
+	msg := format
+	if len(v) > 0 {
+		msg = fmt.Sprintf(format, v...)
+	}
 	panic(AssertError{msg})
 }
 
