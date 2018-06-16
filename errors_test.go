@@ -2,6 +2,7 @@ package errors_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"runtime"
 	"testing"
@@ -111,20 +112,70 @@ func TestLogger(t *testing.T) {
 	}
 }
 
-// runtimer is used to test catching of runtime errors
-type runtimer struct {
+// testStruct is used to test catch functionality
+type testStruct struct {
 	errors.Handler
+	ErrorToTest   error
+	ErrorsToCache []error
 }
 
-func (l *runtimer) CatchNothing() (err error) {
-	defer l.Catch(&err)
-	// must on a runtime error should panic
-	l.Must(&runtime.TypeAssertionError{})
+func (ts *testStruct) Test() (err error) {
+	defer ts.Catch(&err, ts.ErrorsToCache...)
+	ts.Must(ts.ErrorToTest)
 	return
 }
 
 func TestRuntimeError(t *testing.T) {
 	t.Parallel()
-	rt := new(runtimer)
-	assert.Panics(t, func() { rt.CatchNothing() })
+
+	tests := []struct {
+		name      string
+		ts        testStruct
+		wantPanic bool
+		wantErr   bool
+	}{
+		{
+			name:      "runtime error",
+			ts:        testStruct{ErrorToTest: &runtime.TypeAssertionError{}},
+			wantPanic: true,
+		},
+		{
+			name:    "expected custom error with no defined errors to catch",
+			ts:      testStruct{ErrorToTest: fmt.Errorf("failed")},
+			wantErr: true,
+		},
+		{
+			name: "expected custom error with defined errors to catch",
+			ts: testStruct{
+				ErrorToTest:   fmt.Errorf("failed"),
+				ErrorsToCache: []error{fmt.Errorf("")},
+			},
+			wantErr: true,
+		},
+		{
+			name: "unexpected custom error with defined errors to catch",
+			ts: testStruct{
+				ErrorToTest:   &ParseError{msg: "unexpected"},
+				ErrorsToCache: []error{fmt.Errorf("")},
+			},
+			wantPanic: true,
+		},
+		{
+			name: "no error was returned",
+		},
+		{
+			name: "no error was returned with defined errors to catch",
+			ts:   testStruct{ErrorsToCache: []error{fmt.Errorf("")}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantPanic {
+				assert.Panics(t, func() { tt.ts.Test() })
+			} else {
+				assert.Equal(t, tt.wantErr, tt.ts.Test() != nil)
+			}
+		})
+	}
 }
