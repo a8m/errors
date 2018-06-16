@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"runtime"
 )
@@ -17,16 +18,22 @@ var assertType = reflect.TypeOf(AssertError{})
 
 // Handler is the type you embed in your struct in order to give it the "fancy" errors handling
 // flow control.
-type Handler struct{}
+type Handler struct {
+	// Panic is called when an error that was not expected has been called.
+	// If not defined, the standard "panic" will be called.
+	Panic func(error)
+}
 
-// Catch catches errors in the function it was called in it. The default
-// behavior is to catch all errors except runtime.Error, and it goes like this:
+// Catch catches errors in the function it was called in it.
+// If no types are given, it catches all errors except runtime.Error.
+// Otherwise it catches only the defined error types.
+// Usage:
 //
-//	defer h.Catch(&err)
+//      defer h.Catch(&err)
 //
-// You can pass to it only specific errors if you want to catch only those. For example:
+// Or:
 //
-//	defer h.Catch(&err, io.EOF, &time.ParseError{})
+//	    defer h.Catch(&err, io.EOF, &time.ParseError{})
 //
 func (h *Handler) Catch(err *error, types ...error) {
 	r := recover()
@@ -62,7 +69,10 @@ func (h *Handler) Catch(err *error, types ...error) {
 			return
 		}
 	}
-	panic(rerr)
+	if h.Panic == nil {
+		panic(rerr)
+	}
+	h.Panic(rerr)
 }
 
 // Must panics if error occurred. Should be caught by Catch.
@@ -107,20 +117,33 @@ func (h *Handler) Assertf(cond bool, format string, v ...interface{}) {
 	panic(AssertError{msg})
 }
 
-// Must panics if error occurred.
-func Must(err error) {
-	if err != nil {
-		panic(err)
-	}
+// defaultHandler is used for package level functions.
+// It changes the behavior when meeting an error that was not expected to
+// log.Fatal instead of panic.
+var defaultHandler = Handler{
+	Panic: func(err error) { log.Fatal(err) },
 }
 
-// Assert panics if the assertion is false.
-func Assert(cond bool, format string, v ...interface{}) {
-	if !cond {
-		panic(AssertError{
-			fmt.Sprintf(format, v...),
-		})
-	}
+// Must panics if error occurred.
+func Must(err error) {
+	defaultHandler.Must(err)
+}
+
+// Assertf panics with AssertError if the assertion is false.
+func Assertf(cond bool, format string, v ...interface{}) {
+	defaultHandler.Assertf(cond, format, v...)
+}
+
+// Assert panics with a custom error if the assertion is false.
+func Assert(cond bool, err error) {
+	defaultHandler.Assert(cond, err)
+}
+
+// Catch catches errors in the function it was called in it.
+// If no types are given, it catches all errors except runtime.Error.
+// Otherwise it catches only the defined error types.
+func Catch(err *error, types ...error) {
+	defaultHandler.Catch(err, types...)
 }
 
 // indirect returns the item at the end of indirection.
