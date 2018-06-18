@@ -22,6 +22,31 @@ type Handler struct {
 	// Panic is called when an error that was not expected has been called.
 	// If not defined, the standard "panic" will be called.
 	Panic func(error)
+
+	// AssertError provides the option to return a custom error type for when calling to Handler.Assertf.
+	// Usage:
+	//
+	//		type Parser struct {
+	//			errors.Handler
+	//		}
+	//
+	//		func NewParser() *Parser {
+	//			p := new(Parser)
+	//			p.AssertError = func(s string) error {
+	//				return &ParseError{s}
+	//			}
+	//			return
+	//		}
+	//
+	//		// Parse parses the input, and return a ParseError if the input is not valid.
+	//		func (p *Parser) Parse(b []byte) error {
+	//			defer p.Catch(&err)
+	//			p.Assertf(len(b) > 0, "expect non-empty input")
+	//			// ...
+	//			return
+	//		}
+	//
+	AssertError func(string) error
 }
 
 // Catch catches errors in the function it was called in it.
@@ -82,7 +107,7 @@ func (h *Handler) Must(err error) {
 	}
 }
 
-// Assert panics with a custom error. For example:
+// Assert panics with a custom error if the condition is false. For example:
 //
 //	type Parser struct {
 //		errors.Handler
@@ -99,7 +124,8 @@ func (h *Handler) Assert(cond bool, err error) {
 	panic(err)
 }
 
-// Assertf panics with AssertError. For example:
+// Assertf panics with AssertError if the condition is false. Set the Handler.AssertError field
+// if you want to return a custom error type. Usage:
 //
 //	type Parser struct {
 //		errors.Handler
@@ -107,7 +133,7 @@ func (h *Handler) Assert(cond bool, err error) {
 //
 //	p := new(Parser)
 //
-//	p.Assert(len(input) > 0, "empty input")
+//	p.Assertf(len(input) > 0, "empty input")
 //
 func (h *Handler) Assertf(cond bool, format string, v ...interface{}) {
 	if cond {
@@ -116,6 +142,9 @@ func (h *Handler) Assertf(cond bool, format string, v ...interface{}) {
 	msg := format
 	if len(v) > 0 {
 		msg = fmt.Sprintf(format, v...)
+	}
+	if h.AssertError != nil {
+		panic(h.AssertError(msg))
 	}
 	panic(AssertError{msg})
 }
