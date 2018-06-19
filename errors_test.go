@@ -23,7 +23,7 @@ func (p *Parser) Parse(b []byte) (params Params, err error) {
 	defer p.Catch(&err)
 	p.Must(json.Unmarshal(b, &params))
 	p.Assert(params.Limit > 0, &ParseError{msg: "Limit must be greater than 0"})
-	p.Assert(params.Offset >= 0, &ParseError{msg: "Offset must be greater than or equal to 0"})
+	p.Assertf(params.Offset >= 0, "Offset must be greater than or equal to 0. got: %v", params.Offset)
 	p.parseDate(&params)
 	return
 }
@@ -65,6 +65,13 @@ func TestParser(t *testing.T) {
 	t.Parallel()
 	p := new(Parser)
 	_, err := p.Parse([]byte(`{ "limit": -1 }`))
+	assert.NotNil(t, err)
+	assert.IsType(t, err, &ParseError{})
+	_, err = p.Parse([]byte(`{ "limit": 100, "offset": -1 }`))
+	assert.NotNil(t, err)
+	assert.IsType(t, err, errors.AssertError{})
+	p.AssertError = func(s string) error { return &ParseError{s} }
+	_, err = p.Parse([]byte(`{ "limit": 100, "offset": -1 }`))
 	assert.NotNil(t, err)
 	assert.IsType(t, err, &ParseError{})
 }
