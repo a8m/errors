@@ -52,6 +52,40 @@ func (p *Parser) Parse(b []byte) (params Params, err error) {
 ```
 ##### Using `Must` and `Assert/f` in the main function.
 ```go
+func main() {
+	// parse configuration.
+	var c Config
+	errors.Must(envconfig.Process("app", &c))
+
+	// set up db connection.
+	db, err := gorm.Open("mysql", c.MySQLDSN)
+	errors.Must(err)
+
+	// create elastic client.
+	errors.Assertf(validator.URL(c.ElasticURL), "invalid elastic url")
+	client, err := elastic.NewClient(elastic.SetURL(c.ElasticURL))
+	errors.Must(err)
+
+	// application setup.
+
+	d, err := deleter.New(&deleter.Config{
+		DB:  db,
+		Log: logrus.WithField("pkg", "deleter"),
+	})
+	errors.Must(err)
+	go d.Start()
+	defer d.Stop()
+
+	p, err := producer.New(&producer.Config{
+		Queue: c.Queue,
+		Log:   logrus.WithField("pkg", "producer"),
+	})
+	errors.Must(err)
+
+	h := rest.NewHandler(p, d)
+
+	log.Fatal(http.ListenAndServe(":8080", rest.NewHandler(p, d)))
+}
 ```
 
 
