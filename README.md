@@ -1,8 +1,6 @@
 ### errors
 errors is an experimental package for errors handling in Go that simplifies the `err != nil` flow control and makes the code much readable and easier to maintain. It adopted a pattern that was taken from the Go standard libraries and made it more generic and friendly to use. You can read more about it in the section below.
 
-<PHOTO WITH CODE EXAMPLE>
-
 #### Examples
 ##### Embed the `errors.Handler` in a struct.
 ```go
@@ -13,8 +11,8 @@ type Parser struct {
 func (p *Parser) Parse(b []byte) (params Params, err error) {
 	defer p.Catch(&err)
 	p.Must(json.Unmarshal(b, &params))
-	p.Assert(params.Limit > 0, &ParseError{msg: "Limit must be greater than 0"})
-	p.Assertf(params.Offset >= 0, "Offset must be greater than or equal to 0. got: %v", params.Offset)
+	p.Assert(params.Limit > 0, &ParseError{msg: "Limit must be > 0"})
+	p.Assertf(params.Offset >= 0, "Offset must be >= 0. got: %v", params.Offset)
 	p.parseDate(&params)
 	return
 }
@@ -44,9 +42,8 @@ func (p *Parser) Parse(b []byte) (params Params, err error) {
 	defer p.Catch(&err)
 	p.Must(json.Unmarshal(b, &params))
 	v, ok := params.Filter["created_at"]
-	// return `ParseError` is assertion failed.
+	// return `ParseError` if assertion failed.
 	p.Assertf(ok, "created_at is a required field")
-	// ...
 	return
 }
 ```
@@ -83,25 +80,29 @@ func main() {
 	errors.Must(err)
 
 	h := rest.NewHandler(p, d)
-
-	log.Fatal(http.ListenAndServe(":8080", rest.NewHandler(p, d)))
+	log.Fatal(http.ListenAndServe(":8080", h))
 }
 ```
 
 
 ### Motivation
-A few years ago while writing a parser I decided to give a look to the `go/parser` package in the standard library and found this code ([1], [2]). <What does this code do?>
-I adopted that to my project and the change was amazing. From 
+A few years ago I wrote a Parser for a project that I was working on. Parser logic was full of deeply nested and recursive function calls, where almost every function returned an error that was bubbled up all the way to the user.
+I didn't like. It was really hard to write code like this, where almost every step is an expectation. I didn't see any value in handling the errors if all I want to do is to return them to the user. I decided to give a look to the `go/parser` package in the standard library in order to learn idiomatic Go. I found this code ([1], [2]) and decided to adopt this pattern to my project.
+The change was amazing. My parser was far more readable, it was easier to add or refactor code, and I just loved it like this.
+Since then, almost every time I need to write a parser or anything else that similar in the complexity, I use this pattern. After too many times of copy-pasting this pattern, I decided to create this package. I guess it will help others as well.
 
-A few years ago I wrote a Parser for a project that I was working on. Parser logic was full of deeply nested and recursive function calls, where almost every function returned an error that was bubbled up all the way to the user. I didn't like. It was really hard to write code like this where almost every step was an expectation. So, I decided to give a look to the `go/parser` package in the standard library and found this code ([1], [2]).
+__"You talked about parsers, but you showed above a `main` example?"__ - Yes, I treat the `main` function the same. In the sense that if I expect something to pass in order to start the application, I don't see any point in handling the error if all I want, is to crash. In these cases, I use that too.
 
-### Why
-- Makes life easier when every step is an Assertion or when you have deeply nested function calls.
-  Writing parsers for example.
-- Common in the standard library (gob, json, template, ...), and I have a few projects that use this technique.
-  __Why not creating something generic__?
+__"Where else this pattern used in the standard packages?"__ - Like it was mentioned above, this pattern is really common in programs where almost every step is an expectation. Therefore, you can find it in packages like: [`fmt`](fmt), [`template`](template), [`template/parse`](template/parse), [`encoding/json`](json), [`encoding/gob`](gob) and more. Oh, and of course, in the `parser` package [1], [2].
 
+__"What about performance?"__ - There is an overhead, but it's not so bad. Although, it should be improved in Go 1.11, since the compiler inlines panic calls. I will add a perf section really soon. Also for Go 1.11. Until then, you can check out #8 and #9.
+
+__"Should I replace all my error handling with this pattern?"__ - No. There is no real rule for that, but try to find the right balance. Do not be afraid to use it, but do not abuse it.
 
 [1]: https://github.com/golang/go/blob/ceb8fe45da7042b20189de0b66db5b33bb589f7b/src/go/parser/interface.go#L93-L98
 [2]: https://github.com/golang/go/blob/ceb8fe45da7042b20189de0b66db5b33bb589f7b/src/go/parser/parser.go#L344-L364
-
+[fmt]: https://github.com/golang/go/blob/ceb8fe45da7042b20189de0b66db5b33bb589f7b/src/fmt/scan.go#L1041-L1055
+[template]: https://github.com/golang/go/blob/bedfa4e1c37bd08063865da628f242d27ca06ec4/src/text/template/exec.go#L204
+[template/parse]: https://github.com/golang/go/blob/bedfa4e1c37bd08063865da628f242d27ca06ec4/src/text/template/parse/parse.go#L229
+[json]: https://github.com/golang/go/blob/ceb8fe45da7042b20189de0b66db5b33bb589f7b/src/encoding/json/decode.go#L133-L140
+[gob]: https://github.com/golang/go/blob/bedfa4e1c37bd08063865da628f242d27ca06ec4/src/encoding/gob/decode.go#L1086
