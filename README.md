@@ -1,5 +1,5 @@
 ### errors
-errors is an experimental package for errors handling in Go that simplifies the `err != nil` flow control and makes the code much readable and easier to maintain. It adopted a pattern that was taken from the Go standard libraries and made it more generic and friendly to use. You can read more about it in the section below.
+errors is an experimental package for error handling in Go that simplifies the `err != nil` flow control and makes the code much more readable and easier to maintain. It adopts a pattern that was taken from the Go standard library and made it more generic and friendly to use.
 
 #### Examples
 ##### Embed the `errors.Handler` in a struct.
@@ -86,14 +86,14 @@ func main() {
 
 
 ### Motivation
-A few years ago I wrote a Parser for a project that I was working on. Parser logic was full of deeply nested and recursive function calls, where almost every function returned an error that was bubbled up all the way to the user.
-I didn't like. It was really hard to write code like this, where almost every step is an expectation. I didn't see any value in handling the errors if all I want to do is to return them to the user. I decided to give a look to the `go/parser` package in the standard library in order to learn idiomatic Go. I found this code ([1], [2]) and decided to adopt this pattern to my project.
-The change was amazing. My parser was far more readable, it was easier to add or refactor code, and I just loved it like this.
-Since then, almost every time I need to write a parser or anything else that similar in the complexity, I use this pattern. After too many times of copy-pasting this pattern, I decided to create this package. I guess it will help others as well.
+A few years ago I wrote a Parser for a project that I was working on. The parser logic was full of deeply nested and recursive function calls, where almost every function returned an error that was bubbled up all the way to the user.
+I didn't like it. It was really hard to write code like this, where almost every step was an expectation. I didn't see any value in handling the errors if all I want to do is to return them to the user. I decided to take a look at the `go/parser` package in the standard library in order to learn idiomatic Go. I found this code ([1], [2]) and decided to adopt this pattern to my project.
+The change was amazing. My parser was far more readable, it was easier to add or refactor code and I just loved it like this.
+Since then, almost every time I need to write a parser or anything else that similar in the complexity I use this pattern. After too many times of copy-pasting this pattern, I decided to create this package. I guess it will help others as well.
 
-__"You talked about parsers, but you showed above a `main` example?"__ - Yes, I treat the `main` function the same. In the sense that if I expect something to pass in order to start the application, I don't see any point in handling the error if all I want, is to crash. In these cases, I use that too.
+__"You talked about parsers, but you showed above a `main` example?"__ - Yes, I treat the `main` function the same. In the sense that if I expect something to pass in order to start the application, I don't see any point in handling the error if all I want is to crash. In these cases, I use that too.
 
-__"Where else this pattern used in the standard packages?"__ - Like it was mentioned above, this pattern is really common in programs where almost every step is an expectation. Therefore, you can find it in packages like: [`fmt`](fmt), [`template`](template), [`template/parse`](template/parse), [`encoding/json`](json), [`encoding/gob`](gob) and more. Oh, and of course, in the `parser` package [1], [2].
+__"Where else is this pattern used in the standard packages?"__ - Like it was mentioned above, this pattern is really common in programs where almost every step is an expectation. Therefore, you can find it in packages like: [`fmt`](fmt), [`template`](template), [`template/parse`](template/parse), [`encoding/json`](json), [`encoding/gob`](gob) and more. Oh, and of course, in the `parser` package [1], [2].
 
 __"What about performance?"__ - There is an overhead, but it's not so bad. Although, it should be improved in Go 1.11, since the compiler inlines panic calls. I will add a perf section really soon. Also for Go 1.11. Until then, you can check out #8 and #9.
 
