@@ -118,10 +118,9 @@ func (h *Handler) Must(err error) {
 //	p.Assert(len(input) > 0, &ParseError{msg: "empty input"})
 //
 func (h *Handler) Assert(cond bool, err error) {
-	if cond {
-		return
+	if !cond {
+		panic(err)
 	}
-	panic(err)
 }
 
 // Assertf panics with AssertError if the condition is false. Set the Handler.AssertError field
