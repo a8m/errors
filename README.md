@@ -99,6 +99,12 @@ __"What about performance?"__ - There is an overhead, but it's not so bad. Altho
 
 __"Should I replace all my error handling with this pattern?"__ - No. There is no real rule for that, but try to find the right balance. Do not be afraid to use it, but do not abuse it.
 
+### Contributors
+Thanks to [@posener](https://github.com/posener) for joining this project with me. 
+
+### LICENSE
+I am providing code in the repository to you under MIT license. Because this is my personal repository, the license you receive to my code is from me and not my employer (Facebook)
+
 [1]: https://github.com/golang/go/blob/ceb8fe45da7042b20189de0b66db5b33bb589f7b/src/go/parser/interface.go#L93-L98
 [2]: https://github.com/golang/go/blob/ceb8fe45da7042b20189de0b66db5b33bb589f7b/src/go/parser/parser.go#L344-L364
 [fmt]: https://github.com/golang/go/blob/ceb8fe45da7042b20189de0b66db5b33bb589f7b/src/fmt/scan.go#L1041-L1055
