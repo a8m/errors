@@ -95,7 +95,7 @@ __"You talked about parsers, but you showed above a `main` example?"__ - Yes, I 
 
 __"Where else is this pattern used in the standard packages?"__ - Like it was mentioned above, this pattern is really common in programs where almost every step is an expectation. Therefore, you can find it in packages like: [`fmt`](fmt), [`template`](template), [`template/parse`](template/parse), [`encoding/json`](json), [`encoding/gob`](gob) and more. Oh, and of course, in the `parser` package [1], [2].
 
-__"What about performance?"__ - There is an overhead, but it's not so bad. Although, it should be improved in Go 1.11, since the compiler inlines panic calls. I will add a perf section really soon. Also for Go 1.11. Until then, you can check out #8 and #9.
+__"What about performance?"__ - There is an overhead, but it's not so bad. Although, it should be improved in Go 1.11, since the compiler inlines panic calls (saves function calls, but not the heap allocation). I will add a perf section really soon. Also for Go 1.11. Until then, you can check out #8 and #9.
 
 __"Should I replace all my error handling with this pattern?"__ - No. There is no real rule for that, but try to find the right balance. Do not be afraid to use it, but do not abuse it.
 
